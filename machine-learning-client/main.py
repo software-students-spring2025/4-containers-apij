@@ -11,21 +11,40 @@ from datetime import datetime
 def initialize_camera():
     """Initialize and configure the camera."""
     print("Initializing camera...")
-    cap = cv2.VideoCapture(0)
-    
-    if not cap.isOpened():
-        raise RuntimeError("Could not open camera")
-    
-    # Set camera properties
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-    cap.set(cv2.CAP_PROP_FPS, 30)
-    
-    print("Camera initialized successfully")
-    print(f"Resolution: {cap.get(cv2.CAP_PROP_FRAME_WIDTH)}x{cap.get(cv2.CAP_PROP_FRAME_HEIGHT)}")
-    print(f"FPS: {cap.get(cv2.CAP_PROP_FPS)}")
-    
-    return cap
+    try:
+        cap = cv2.VideoCapture(0)
+        
+        if not cap.isOpened():
+            print("Error: Could not open camera. Trying alternative camera index...")
+            # Try alternative camera index
+            cap = cv2.VideoCapture(1)
+            if not cap.isOpened():
+                raise RuntimeError("Could not open any camera")
+        
+        # Set camera properties
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        cap.set(cv2.CAP_PROP_FPS, 30)
+        
+        # Verify camera settings
+        actual_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+        actual_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        actual_fps = cap.get(cv2.CAP_PROP_FPS)
+        
+        print("Camera initialized successfully")
+        print(f"Resolution: {actual_width}x{actual_height}")
+        print(f"FPS: {actual_fps}")
+        
+        # Test frame capture
+        ret, test_frame = cap.read()
+        if not ret or test_frame is None:
+            raise RuntimeError("Camera opened but cannot read frames")
+        print("Successfully captured test frame")
+        
+        return cap
+    except Exception as e:
+        print(f"Camera initialization error: {str(e)}")
+        raise
 
 def initialize_hand_detection():
     """Initialize MediaPipe hand detection."""
@@ -140,22 +159,31 @@ def main():
         frame_count = 0
         start_time = time.time()
         last_detection_time = 0
+        last_frame_time = time.time()
         
         while True:
+            current_time = time.time()
             # Capture frame
             ret, frame = cap.read()
-            if not ret:
-                print("Error: Could not read frame")
+            if not ret or frame is None:
+                print(f"Error: Could not read frame. ret={ret}, frame={'None' if frame is None else 'valid'}")
+                if current_time - last_frame_time > 5:  # If no frames for 5 seconds
+                    print("No frames received for 5 seconds, attempting to reinitialize camera...")
+                    cap.release()
+                    cap = initialize_camera()
+                    last_frame_time = current_time
                 time.sleep(0.1)
                 continue
+            
+            last_frame_time = current_time
             
             # Process hand landmarks
             frame, results = process_hand_landmarks(frame, hands, mp_draw)
             
             # Perform sign detection every 2 seconds
-            current_time = time.time()
             if current_time - last_detection_time >= 2.0 and model is not None:
                 if results.multi_hand_landmarks:
+                    print("Hand detected, processing landmarks...")
                     # Extract features from hand landmarks
                     features = extract_features(results.multi_hand_landmarks[0])
                     
@@ -163,10 +191,17 @@ def main():
                     try:
                         prediction = model.predict([features])[0]
                         confidence = model.predict_proba([features])[0].max()
+                        print(f"Prediction: {prediction}, Confidence: {confidence:.2f}")
+                        
+                        # Draw prediction on frame
+                        cv2.putText(frame, f"{prediction} ({confidence:.2f})", 
+                                  (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, 
+                                  (0, 255, 0), 2, cv2.LINE_AA)
                         
                         # Send detection if confidence is high enough
-                        if confidence > 0.7:
-                            send_detection(prediction, confidence)
+                        if confidence > 0.2:  # Lowered from 0.7 to 0.2
+                            if send_detection(prediction, confidence):
+                                print(f"Successfully sent detection: {prediction}")
                             last_detection_time = current_time
                     except Exception as e:
                         print(f"Prediction error: {e}")
@@ -180,6 +215,8 @@ def main():
                     elapsed_time = time.time() - start_time
                     fps = frame_count / elapsed_time
                     print(f"Streaming at {fps:.2f} FPS")
+            else:
+                print("Failed to send frame to web app")
             
             # Control frame rate
             time.sleep(0.033)  # ~30 FPS
@@ -188,6 +225,8 @@ def main():
         print("\nStopping stream...")
     except Exception as e:
         print(f"An error occurred: {e}")
+        import traceback
+        traceback.print_exc()
     finally:
         if 'cap' in locals():
             cap.release()
