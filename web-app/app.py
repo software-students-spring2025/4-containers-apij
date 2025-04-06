@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 from io import BytesIO
 import base64
+import traceback
 
 # Load environment variables
 load_dotenv()
@@ -15,13 +16,21 @@ app = Flask(__name__)
 
 # MongoDB connection
 print("Connecting to MongoDB...")
-client = MongoClient(os.getenv('MONGODB_URI', 'mongodb://mongodb:27017/'))
-db = client.asl_detector
-detections = db.detections
-print("MongoDB connection established")
+try:
+    client = MongoClient(os.getenv('MONGODB_URI', 'mongodb://mongodb:27017/'))
+    # Test the connection
+    client.server_info()
+    db = client.asl_detector
+    detections = db.detections
+    print("MongoDB connection established successfully")
+except Exception as e:
+    print(f"Error connecting to MongoDB: {e}")
+    print(traceback.format_exc())
+    raise
 
 # Store the latest frame
 latest_frame = None
+latest_frame_time = None
 
 @app.route('/')
 def index():
@@ -40,6 +49,7 @@ def get_detections():
         return jsonify(recent_detections)
     except Exception as e:
         print(f"Error getting detections: {e}")
+        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/detections', methods=['POST'])
@@ -64,12 +74,13 @@ def add_detection():
         return jsonify({'message': 'Detection added', 'id': str(result.inserted_id)}), 201
     except Exception as e:
         print(f"Error adding detection: {e}")
+        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/frame', methods=['POST'])
 def receive_frame():
     """Receive and store the latest frame from the ML client."""
-    global latest_frame
+    global latest_frame, latest_frame_time
     if 'frame' not in request.files:
         return jsonify({'error': 'No frame provided'}), 400
     
@@ -77,23 +88,39 @@ def receive_frame():
         file = request.files['frame']
         frame_bytes = file.read()
         nparr = np.frombuffer(frame_bytes, np.uint8)
-        latest_frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        if frame is None:
+            raise ValueError("Failed to decode frame")
+        
+        latest_frame = frame
+        latest_frame_time = datetime.utcnow()
+        print(f"Received new frame, shape: {frame.shape}")
         return jsonify({'message': 'Frame received'}), 200
     except Exception as e:
         print(f"Error receiving frame: {e}")
+        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/frame', methods=['GET'])
 def get_frame():
     """Get the latest frame as a JPEG image."""
-    global latest_frame
+    global latest_frame, latest_frame_time
     if latest_frame is None:
         return jsonify({'error': 'No frame available'}), 404
     
     try:
+        # Check if frame is too old (more than 5 seconds)
+        if latest_frame_time and (datetime.utcnow() - latest_frame_time).total_seconds() > 5:
+            print("Frame is too old")
+            return jsonify({'error': 'Frame is too old'}), 404
+        
         # Encode frame with quality 80 for better performance
         encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 80]
         _, buffer = cv2.imencode('.jpg', latest_frame, encode_param)
+        if buffer is None:
+            raise ValueError("Failed to encode frame")
+            
         frame_bytes = buffer.tobytes()
         
         # Create response with proper headers
@@ -104,6 +131,7 @@ def get_frame():
         return response
     except Exception as e:
         print(f"Error sending frame: {e}")
+        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/stats')
@@ -123,6 +151,7 @@ def get_stats():
         })
     except Exception as e:
         print(f"Error getting stats: {e}")
+        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
