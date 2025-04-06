@@ -14,9 +14,11 @@ load_dotenv()
 app = Flask(__name__)
 
 # MongoDB connection
+print("Connecting to MongoDB...")
 client = MongoClient(os.getenv('MONGODB_URI', 'mongodb://mongodb:27017/'))
 db = client.asl_detector
 detections = db.detections
+print("MongoDB connection established")
 
 # Store the latest frame
 latest_frame = None
@@ -29,27 +31,40 @@ def index():
 @app.route('/api/detections', methods=['GET'])
 def get_detections():
     """Get recent ASL detections from the database."""
-    recent_detections = list(detections.find(
-        {},
-        {'_id': 0}  # Exclude MongoDB _id field
-    ).sort('timestamp', -1).limit(50))
-    return jsonify(recent_detections)
+    try:
+        recent_detections = list(detections.find(
+            {},
+            {'_id': 0}  # Exclude MongoDB _id field
+        ).sort('timestamp', -1).limit(50))
+        print(f"Retrieved {len(recent_detections)} detections")
+        return jsonify(recent_detections)
+    except Exception as e:
+        print(f"Error getting detections: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/detections', methods=['POST'])
 def add_detection():
     """Add a new ASL detection to the database."""
-    data = request.get_json()
-    if not data or 'sign' not in data:
-        return jsonify({'error': 'Missing sign data'}), 400
-    
-    detection = {
-        'sign': data['sign'],
-        'confidence': data.get('confidence', 1.0),
-        'timestamp': datetime.utcnow()
-    }
-    
-    result = detections.insert_one(detection)
-    return jsonify({'message': 'Detection added', 'id': str(result.inserted_id)}), 201
+    try:
+        data = request.get_json()
+        print(f"Received detection data: {data}")
+        
+        if not data or 'sign' not in data:
+            print("Missing sign data in request")
+            return jsonify({'error': 'Missing sign data'}), 400
+        
+        detection = {
+            'sign': data['sign'],
+            'confidence': data.get('confidence', 1.0),
+            'timestamp': datetime.utcnow()
+        }
+        
+        result = detections.insert_one(detection)
+        print(f"Added detection with ID: {result.inserted_id}")
+        return jsonify({'message': 'Detection added', 'id': str(result.inserted_id)}), 201
+    except Exception as e:
+        print(f"Error adding detection: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/frame', methods=['POST'])
 def receive_frame():
@@ -65,6 +80,7 @@ def receive_frame():
         latest_frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         return jsonify({'message': 'Frame received'}), 200
     except Exception as e:
+        print(f"Error receiving frame: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/frame', methods=['GET'])
@@ -87,21 +103,27 @@ def get_frame():
         response.headers['Pragma'] = 'no-cache'
         return response
     except Exception as e:
+        print(f"Error sending frame: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/stats')
 def get_stats():
     """Get statistics about ASL detections."""
-    total_detections = detections.count_documents({})
-    signs_count = detections.aggregate([
-        {'$group': {'_id': '$sign', 'count': {'$sum': 1}}}
-    ])
-    signs_count = list(signs_count)
-    
-    return jsonify({
-        'total_detections': total_detections,
-        'signs_count': signs_count
-    })
+    try:
+        total_detections = detections.count_documents({})
+        signs_count = detections.aggregate([
+            {'$group': {'_id': '$sign', 'count': {'$sum': 1}}}
+        ])
+        signs_count = list(signs_count)
+        
+        print(f"Stats - Total detections: {total_detections}, Signs count: {signs_count}")
+        return jsonify({
+            'total_detections': total_detections,
+            'signs_count': signs_count
+        })
+    except Exception as e:
+        print(f"Error getting stats: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5001))
