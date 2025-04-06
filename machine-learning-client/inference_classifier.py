@@ -1,11 +1,18 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import pickle
 import cv2
 import mediapipe as mp
 import numpy as np
 import time
 
+#For integration 
+from datetime import datetime
+from database.mongodb_integration import insert_detection, insert_session
+
 # Load the model
-model_dict = pickle.load(open('./model.p', 'rb'))
+model_dict = pickle.load(open('model.p', 'rb'))
 model = model_dict['model']
 
 # Camera setup
@@ -76,6 +83,13 @@ while True:
             prediction = model.predict([np.asarray(data_aux)])
             # The prediction is already a string letter, no need for conversion
             predicted_character = prediction[0]
+
+            # Inserting detection for MongoDB
+            insert_detection(
+                session_id = "test_session",
+                letter = predicted_character,
+                timestamp = datetime.now()
+            )
             
             # Draw bounding box
             x1 = int(min(x_) * W) - 10
