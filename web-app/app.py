@@ -17,7 +17,11 @@ app = Flask(__name__)
 # MongoDB connection
 print("Connecting to MongoDB...")
 try:
-    client = MongoClient(os.getenv('MONGODB_URI', 'mongodb://mongodb:27017/'))
+    # Use environment variable or default to localhost for local development
+    mongodb_uri = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
+    print(f"Using MongoDB URI: {mongodb_uri}")
+    
+    client = MongoClient(mongodb_uri)
     # Test the connection
     client.server_info()
     db = client.asl_detector
