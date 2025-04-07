@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-from datetime import datetime, timezone
+from datetime import datetime 
 
 def get_database():
     """
@@ -76,13 +76,13 @@ def get_detections():
 
 # Test: Insert a session record
 session_id = "session_001"
-start = datetime.now(timezone.utc)
-end = datetime.now(timezone.utc)
+start = datetime.utcnow()
+end = datetime.utcnow()
 session_inserted_id = insert_session(session_id, start, end)
 print("Inserted session with ID:", session_inserted_id)
 
 # Test: Insert a detection record
-detection_inserted_id = insert_detection(session_id, "A", datetime.now(timezone.utc), confidence=0.98)
+detection_inserted_id = insert_detection(session_id, "A", datetime.utcnow(), confidence=0.98)
 print("Inserted detection with ID:", detection_inserted_id)
 
 # Test: Print all session and detection records
