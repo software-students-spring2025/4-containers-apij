@@ -16,7 +16,7 @@ def initialize_camera():
         
         if not cap.isOpened():
             print("Error: Could not open camera. Trying alternative camera index...")
-            # Try alternative camera index
+            # Try alternative camera index if 0 does not work
             cap = cv2.VideoCapture(1)
             if not cap.isOpened():
                 raise RuntimeError("Could not open any camera")
