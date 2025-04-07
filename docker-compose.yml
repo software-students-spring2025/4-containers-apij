@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mongodb:
     image: mongo:latest
@@ -10,6 +8,26 @@ services:
     networks:
       - asl_network
 
+  ml-client:
+    build: ./machine-learning-client
+    ports:
+      - "5002:5002"
+    environment:
+      - WEB_APP_URL=http://web-app:5001
+    privileged: true
+    security_opt:
+      - seccomp:unconfined
+    devices:
+      - /dev/video0:/dev/video0
+      - /dev/video1:/dev/video1
+    volumes:
+      - ./machine-learning-client:/app
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    networks:
+      - asl_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   web-app:
     build: ./web-app
     ports:
@@ -17,8 +35,10 @@ services:
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/
       - PORT=5001
+      - ML_CLIENT_URL=http://ml-client:5002
     depends_on:
       - mongodb
+      - ml-client
     volumes:
       - ./web-app:/app
     networks:
