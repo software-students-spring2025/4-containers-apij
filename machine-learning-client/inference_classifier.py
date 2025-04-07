@@ -31,6 +31,10 @@ hands = mp_hands.Hands(static_image_mode=True, min_detection_confidence=0.3)
 # Set a single color for all boxes - green
 box_color = (0, 255, 0)  # Green in BGR
 
+# Tracking for letter filtering
+prev_letter = None
+letter_start_time = None
+
 while True:
     ret, frame = cap.read()
     if not ret:
@@ -84,12 +88,29 @@ while True:
             # The prediction is already a string letter, no need for conversion
             predicted_character = prediction[0]
 
-            # Inserting detection for MongoDB
-            insert_detection(
-                session_id = "test_session",
-                letter = predicted_character,
-                timestamp = datetime.now()
-            )
+            # Inserting detection for MongoDB - track current time to add filter 
+            current_time = datetime.now()
+
+            if predicted_character == prev_letter:
+                duration = (current_time - letter_start_time).total_seconds()
+                if duration >= 3:
+                    # Insert one time, then reset 
+                    insert_detection(
+                        session_id="test_session", 
+                        letter=predicted_character,
+                        timestamp=current_time, 
+                    )
+                    print(f"Inserted detection: {predicted_character} at {current_time}")
+
+                    # Reset so it doesn't continue to insert 
+                    prev_letter = None 
+                    letter_start_time = None
+            else:
+                prev_letter = predicted_character
+                letter_start_time = current_time
+
+            
+        
             
             # Draw bounding box
             x1 = int(min(x_) * W) - 10
@@ -111,3 +132,5 @@ while True:
 
 cap.release()
 cv2.destroyAllWindows()
+
+
