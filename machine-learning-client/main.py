@@ -7,19 +7,47 @@ import io
 import mediapipe as mp
 import pickle
 from datetime import datetime
+import os
+from flask import Flask
+import threading
+
+# Get web app URL from environment variable
+WEB_APP_URL = os.getenv('WEB_APP_URL', 'http://localhost:5001')
+
+# Initialize Flask app for health check
+app = Flask(__name__)
+
+@app.route('/health')
+def health_check():
+    return {'status': 'healthy'}, 200
 
 def initialize_camera():
     """Initialize and configure the camera."""
     print("Initializing camera...")
     try:
-        cap = cv2.VideoCapture(0)
+        # Try different camera indices
+        camera_indices = [0, 1, -1]  # Try default, secondary, and last camera
+        cap = None
         
-        if not cap.isOpened():
-            print("Error: Could not open camera. Trying alternative camera index...")
-            # Try alternative camera index
-            cap = cv2.VideoCapture(1)
-            if not cap.isOpened():
-                raise RuntimeError("Could not open any camera")
+        for idx in camera_indices:
+            print(f"Attempting to open camera index {idx}...")
+            cap = cv2.VideoCapture(idx)
+            
+            if cap.isOpened():
+                # Test if we can actually read frames
+                ret, test_frame = cap.read()
+                if ret and test_frame is not None:
+                    print(f"Successfully opened camera index {idx}")
+                    break
+                else:
+                    print(f"Camera {idx} opened but cannot read frames")
+                    cap.release()
+                    cap = None
+            else:
+                print(f"Could not open camera index {idx}")
+        
+        if cap is None:
+            raise RuntimeError("Could not open any camera")
         
         # Set camera properties
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
@@ -34,12 +62,6 @@ def initialize_camera():
         print("Camera initialized successfully")
         print(f"Resolution: {actual_width}x{actual_height}")
         print(f"FPS: {actual_fps}")
-        
-        # Test frame capture
-        ret, test_frame = cap.read()
-        if not ret or test_frame is None:
-            raise RuntimeError("Camera opened but cannot read frames")
-        print("Successfully captured test frame")
         
         return cap
     except Exception as e:
@@ -127,7 +149,7 @@ def send_frame(frame):
         
         # Send to web app
         files = {'frame': ('frame.jpg', img_byte_arr, 'image/jpeg')}
-        response = requests.post('http://localhost:5001/api/frame', files=files)
+        response = requests.post(f'{WEB_APP_URL}/api/frame', files=files)
         response.raise_for_status()
         return True
     except Exception as e:
@@ -142,15 +164,24 @@ def send_detection(sign, confidence=1.0):
             'confidence': confidence,
             'timestamp': datetime.utcnow().isoformat()
         }
-        response = requests.post('http://localhost:5001/api/detections', json=data)
+        response = requests.post(f'{WEB_APP_URL}/api/detections', json=data)
         response.raise_for_status()
         return True
     except Exception as e:
         print(f"Error sending detection: {e}")
         return False
 
+def run_flask():
+    """Run the Flask server"""
+    app.run(host='0.0.0.0', port=5002)
+
 def main():
     try:
+        # Start Flask server in a separate thread
+        flask_thread = threading.Thread(target=run_flask)
+        flask_thread.daemon = True  # This ensures the thread will be terminated when the main program exits
+        flask_thread.start()
+        
         # Initialize camera and hand detection
         cap = initialize_camera()
         hands, mp_draw, model = initialize_hand_detection()
@@ -222,17 +253,13 @@ def main():
             time.sleep(0.033)  # ~30 FPS
             
     except KeyboardInterrupt:
-        print("\nStopping stream...")
+        print("Shutting down gracefully...")
     except Exception as e:
-        print(f"An error occurred: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"Error in main loop: {e}")
     finally:
         if 'cap' in locals():
             cap.release()
-        if 'hands' in locals():
-            hands.close()
-        print("Camera and hand detection released")
+        cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     main()

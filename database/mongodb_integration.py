@@ -7,7 +7,7 @@ def get_database():
     If using docker-compose, you can use 'mongodb' as the host in the connection string.
     For local testing, you might use "mongodb://localhost:27018/".
     """
-    CONNECTION_STRING = "mongodb://localhost:27018/"
+    CONNECTION_STRING = "mongodb://localhost:27017/"
     client = MongoClient(CONNECTION_STRING)
     # Set the database name, e.g., "asl_database"
     return client["asl_database"]
