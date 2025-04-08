@@ -1,8 +1,13 @@
-# test_mongodb_integration.py
-import time
+# test_database.py
 from datetime import datetime, timezone
-import pytest
-from mongodb_integration import insert_session, add_detection_to_batch, flush_detection_batch, db, batch_queue, BATCH_THRESHOLD
+from mongodb_integration import (
+    client, db,
+    insert_session,
+    add_detection_to_batch,
+    flush_detection_batch,
+    BATCH_THRESHOLD,
+    batch_queue
+)
 
 def test_insert_session():
     session_id = "test_session"
