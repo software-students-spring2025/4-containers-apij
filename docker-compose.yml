@@ -1,32 +1,30 @@
-version: '3.8'
+version: '3'
 
 services:
-  mongodb:
-    image: mongo:latest
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-    networks:
-      - asl_network
-
-  web-app:
-    build: ./web-app
+  ml-client:
+    build:
+      context: ./ml-client
+    container_name: asl-model #CONTAINER NAME IS asl-model
     ports:
       - "5001:5001"
+    restart: unless-stopped
+
+
+  web-app:
+    build:
+      context: ./web-app
+    ports:
+      - "5003:5003"
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/
-      - PORT=5001
+      - PYTHONUNBUFFERED=1
+    # Using 'extra_hosts' to add a host mapping for host.docker.internal
+    # This ensures compatibility across Docker versions 
+    extra_hosts:
+      - "host.docker.internal:host-gateway" 
+    
     depends_on:
-      - mongodb
-    volumes:
-      - ./web-app:/app
-    networks:
-      - asl_network
+      - ml-client
+    restart: unless-stopped 
 
-networks:
-  asl_network:
-    driver: bridge
 
-volumes:
-  mongodb_data: 
+    

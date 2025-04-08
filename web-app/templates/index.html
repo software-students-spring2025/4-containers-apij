@@ -1,212 +1,73 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASL Sign Language Detector</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>MacOS Webcam Stream</title>
     <style>
-        .video-container {
-            position: relative;
-            width: 100%;
-            padding-top: 75%; /* 4:3 Aspect Ratio */
-            background-color: #f3f4f6;
-            border-radius: 0.5rem;
-        }
-        .video-container img {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            border-radius: 0.5rem;
-        }
-        .video-error {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
             text-align: center;
-            color: #ef4444;
-            display: none;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .video-container {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stream-img {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+        }
+        .info {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e9f7fe;
+            border-radius: 5px;
+            text-align: left;
+        }
+        .loading {
+            padding: 40px;
+            font-style: italic;
+            color: #666;
         }
     </style>
 </head>
-<body class="bg-gray-100">
-    <div class="container mx-auto px-4 py-8">
-        <header class="text-center mb-12">
-            <h1 class="text-4xl font-bold text-gray-800 mb-2">ASL Sign Language Detector</h1>
-            <p class="text-gray-600">Real-time American Sign Language detection and analysis</p>
-        </header>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <!-- Live Detection Section -->
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h2 class="text-2xl font-semibold mb-4">Live Detection</h2>
-                <div class="video-container">
-                    <img id="videoFeed" class="rounded-lg" alt="Live video feed" />
-                    <div id="videoError" class="video-error">
-                        <p class="text-lg font-semibold">Video feed unavailable</p>
-                        <p class="text-sm">Attempting to reconnect...</p>
-                    </div>
-                </div>
-                <div class="text-center mt-4">
-                    <div id="currentSign" class="text-6xl font-bold text-green-600 mb-2">-</div>
-                    <p class="text-gray-600">Current Sign</p>
-                </div>
-            </div>
-
-            <!-- Statistics Section -->
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h2 class="text-2xl font-semibold mb-4">Statistics</h2>
-                <div class="mb-6">
-                    <h3 class="text-lg font-medium mb-2">Total Detections</h3>
-                    <div id="totalDetections" class="text-3xl font-bold text-blue-600">0</div>
-                </div>
-                <div>
-                    <h3 class="text-lg font-medium mb-2">Sign Distribution</h3>
-                    <canvas id="signsChart" class="w-full"></canvas>
-                </div>
-            </div>
+<body>
+    <div class="container">
+        <h1>MacOS Webcam Stream</h1>
+        <div class="video-container">
+            <div class="loading">Loading webcam stream...</div>  
+            <img class="stream-img" src="/stream" alt="Webcam Stream">
         </div>
 
-        <!-- Recent Detections Section -->
-        <div class="mt-8 bg-white rounded-lg shadow-lg p-6">
-            <h2 class="text-2xl font-semibold mb-4">Recent Detections</h2>
-            <div class="overflow-x-auto">
-                <table class="min-w-full">
-                    <thead>
-                        <tr class="bg-gray-50">
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sign</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Confidence</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                        </tr>
-                    </thead>
-                    <tbody id="detectionsList" class="bg-white divide-y divide-gray-200">
-                        <!-- Detections will be inserted here -->
-                    </tbody>
-                </table>
-            </div>
+
+        
+        <div class="info">
+            <h3>How this works:</h3>
+            <p>1. A Python script on your Mac is accessing your webcam</p>
+            <p>2. It streams the webcam feed over HTTP on port 5002</p>
+            <p>3. This Docker container connects back to your Mac to get the stream</p>
+            <p>4. The container serves this webpage which displays the stream</p>
         </div>
     </div>
 
     <script>
-        let retryCount = 0;
-        const maxRetries = 5;
-        let videoUpdateInterval = null;
-
-        // Initialize Chart.js
-        const ctx = document.getElementById('signsChart').getContext('2d');
-        const signsChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Number of Detections',
-                    data: [],
-                    backgroundColor: 'rgba(59, 130, 246, 0.5)',
-                    borderColor: 'rgb(59, 130, 246)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-
-        // Update video feed with error handling
-        function updateVideoFeed() {
-            const img = document.getElementById('videoFeed');
-            const errorDiv = document.getElementById('videoError');
-            
-            fetch(`/api/frame?t=${new Date().getTime()}`)
-                .then(response => {
-                    if (!response.ok) throw new Error('Video frame not available');
-                    return response.blob();
-                })
-                .then(blob => {
-                    const url = URL.createObjectURL(blob);
-                    img.src = url;
-                    img.style.display = 'block';
-                    errorDiv.style.display = 'none';
-                    retryCount = 0;
-                    
-                    // Clean up the blob URL after the image loads
-                    img.onload = () => URL.revokeObjectURL(url);
-                })
-                .catch(error => {
-                    console.error('Error fetching video frame:', error);
-                    retryCount++;
-                    
-                    if (retryCount >= maxRetries) {
-                        img.style.display = 'none';
-                        errorDiv.style.display = 'block';
-                        // Slow down updates when having issues
-                        if (videoUpdateInterval) {
-                            clearInterval(videoUpdateInterval);
-                            videoUpdateInterval = setInterval(updateVideoFeed, 1000);
-                        }
-                    }
-                });
-        }
-
-        // Update statistics
-        function updateStats() {
-            fetch('/api/stats')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('totalDetections').textContent = data.total_detections;
-                    
-                    // Update chart
-                    signsChart.data.labels = data.signs_count.map(item => item._id);
-                    signsChart.data.datasets[0].data = data.signs_count.map(item => item.count);
-                    signsChart.update();
-                })
-                .catch(error => console.error('Error updating stats:', error));
-        }
-
-        // Update recent detections
-        function updateDetections() {
-            fetch('/api/detections')
-                .then(response => response.json())
-                .then(detections => {
-                    const tbody = document.getElementById('detectionsList');
-                    tbody.innerHTML = detections.map(detection => `
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${detection.sign}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${(detection.confidence * 100).toFixed(1)}%</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(detection.timestamp).toLocaleString()}</td>
-                        </tr>
-                    `).join('');
-                })
-                .catch(error => console.error('Error updating detections:', error));
-        }
-
-        // Update current sign
-        function updateCurrentSign(sign) {
-            document.getElementById('currentSign').textContent = sign;
-        }
-
-        // Initial load
-        updateVideoFeed();
-        updateDetections();
-        updateStats();
-
-        // Start video feed updates
-        videoUpdateInterval = setInterval(updateVideoFeed, 100);
-
-        // Update stats and detections every 5 seconds
-        setInterval(() => {
-            updateStats();
-            updateDetections();
-        }, 5000);
+        // Hide the loading message when the image loads
+        document.querySelector('.stream-img').onload = function() {
+            document.querySelector('.loading').style.display = 'none';
+        };
     </script>
 </body>
-</html> 
+</html>
