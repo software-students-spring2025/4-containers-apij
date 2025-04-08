@@ -1,91 +1,168 @@
-from pymongo import MongoClient
+import os
+import logging
+import threading
+import signal
+import sys
+import time
+from pymongo import MongoClient, InsertOne
+from pymongo.errors import BulkWriteError
 from datetime import datetime, timezone
 
-def get_database():
-    """
-    Connect to MongoDB and return the database object.
-    If using docker-compose, you can use 'mongodb' as the host in the connection string.
-    For local testing, you might use "mongodb://localhost:27018/".
-    """
-    CONNECTION_STRING = "mongodb://localhost:27017/"
-    client = MongoClient(CONNECTION_STRING)
-    # Set the database name, e.g., "asl_database"
-    return client["asl_database"]
+# ---------------------------
+# Configuration (using environment variables or defaults)
+# ---------------------------
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27018/")
+DATABASE_NAME = os.environ.get("DATABASE_NAME", "asl_database")
+BATCH_THRESHOLD = int(os.environ.get("BATCH_THRESHOLD", 10))
+FLUSH_INTERVAL = float(os.environ.get("FLUSH_INTERVAL", 2))  # seconds
 
+# ---------------------------
+# Logging setup
+# ---------------------------
+logging.basicConfig(level=logging.INFO, 
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
+# ---------------------------
+# Persistent MongoDB connection
+# ---------------------------
+client = MongoClient(MONGO_URI)
+db = client[DATABASE_NAME]
+
+# Global variables for batch insertion with thread safety
+batch_queue = []  # will store pending detection records as InsertOne operations
+batch_lock = threading.Lock()
+stop_event = threading.Event()
+
+# ---------------------------
+# Database Operations
+# ---------------------------
 def insert_session(session_id, start_time, end_time):
     """
-    Insert a session record that logs the start and end times.
+    Insert a session record into the 'sessions' collection.
 
-    :param session_id: Unique session identifier (string)
-    :param start_time: Start time (datetime object)
-    :param end_time: End time (datetime object)
-    :return: The inserted document's ID
+    Parameters:
+      - session_id: Unique identifier for the session.
+      - start_time: Starting time of the session (timezone-aware UTC).
+      - end_time: Ending time of the session (timezone-aware UTC).
+    Returns:
+      - The inserted document's ID or None if an error occurs.
     """
-    db = get_database()
     sessions = db["sessions"]
     session_doc = {
         "session_id": session_id,
         "start_time": start_time,
         "end_time": end_time
     }
-    result = sessions.insert_one(session_doc)
-    return result.inserted_id
+    try:
+        result = sessions.insert_one(session_doc)
+        logging.info(f"Inserted session with ID: {result.inserted_id}")
+        return result.inserted_id
+    except Exception as e:
+        logging.error(f"Error inserting session: {e}")
+        return None
 
-def insert_detection(session_id, letter, timestamp, confidence=None):
+def add_detection_to_batch(session_id, detection, timestamp, confidence=None):
     """
-    Insert a detection record that logs the detected letter and its timestamp.
+    Add a detection record to a global batch queue. Once the threshold is reached,
+    perform a bulk write to the database.
 
-    :param session_id: The session ID to which this detection belongs
-    :param letter: Detected letter (e.g., "A")
-    :param timestamp: Detection time (datetime object)
-    :param confidence: (Optional) Confidence level of the prediction
-    :return: The inserted document's ID
+    Parameters:
+      - session_id: Identifier to group detections with a session.
+      - detection: The letter or sign recognized.
+      - timestamp: The time when the detection occurred.
+      - confidence: (Optional) The confidence level of the recognition.
     """
-    db = get_database()
-    detections = db["detections"]
+    global batch_queue
     detection_doc = {
         "session_id": session_id,
-        "letter": letter,
+        "detection": detection,
         "timestamp": timestamp
     }
     if confidence is not None:
         detection_doc["confidence"] = confidence
-    result = detections.insert_one(detection_doc)
-    return result.inserted_id
-
-def get_sessions():
-    """
-    Retrieve all session records.
     
-    :return: List of session documents
-    """
-    db = get_database()
-    sessions = db["sessions"]
-    return list(sessions.find())
+    with batch_lock:
+        batch_queue.append(InsertOne(detection_doc))
+        current_size = len(batch_queue)
+    logging.info(f"Added detection. Current batch size: {current_size}")
 
-def get_detections():
+    if current_size >= BATCH_THRESHOLD:
+        flush_detection_batch()
+
+def flush_detection_batch():
     """
-    Retrieve all detection records.
+    Perform a bulk write for all detection records in the batch queue.
+    """
+    global batch_queue
+    with batch_lock:
+        if not batch_queue:
+            return
+        operations = batch_queue[:]  # make a copy
+        batch_queue = []  # clear queue
     
-    :return: List of detection documents
-    """
-    db = get_database()
-    detections = db["detections"]
-    return list(detections.find())
+    try:
+        detections = db["detections"]
+        result = detections.bulk_write(operations)
+        logging.info(f"Bulk inserted {result.inserted_count} detection records.")
+    except BulkWriteError as bwe:
+        logging.error(f"Bulk write error: {bwe.details}")
+    except Exception as e:
+        logging.error(f"Unexpected error during bulk write: {e}")
 
+# ---------------------------
+# Periodic Flush Background Thread
+# ---------------------------
+def periodic_flush():
+    """Flush the batch queue at regular intervals."""
+    while not stop_event.is_set():
+        time.sleep(FLUSH_INTERVAL)
+        flush_detection_batch()
 
-# Test: Insert a session record
-session_id = "session_001"
-start = datetime.now(timezone.utc)
-end = datetime.now(timezone.utc)
-session_inserted_id = insert_session(session_id, start, end)
-print("Inserted session with ID:", session_inserted_id)
+def start_periodic_flush():
+    thread = threading.Thread(target=periodic_flush)
+    thread.daemon = True
+    thread.start()
+    return thread
 
-# Test: Insert a detection record
-detection_inserted_id = insert_detection(session_id, "A", datetime.now(timezone.utc), confidence=0.98)
-print("Inserted detection with ID:", detection_inserted_id)
+# ---------------------------
+# Graceful Shutdown
+# ---------------------------
+def graceful_exit(signum, frame):
+    logging.info("Termination signal received; flushing remaining detection records.")
+    stop_event.set()
+    flush_detection_batch()
+    sys.exit(0)
 
-# Test: Print all session and detection records
-print("All sessions:", get_sessions())
-print("All detections:", get_detections()) 
+signal.signal(signal.SIGINT, graceful_exit)
+signal.signal(signal.SIGTERM, graceful_exit)
 
+# ---------------------------
+# Main Testing & Demonstration
+# ---------------------------
+if __name__ == "__main__":
+    # Start the periodic flushing thread
+    flush_thread = start_periodic_flush()
+
+    # Insert a session record for testing
+    session_id = "session_001"
+    start_time = datetime.now(timezone.utc)
+    end_time = datetime.now(timezone.utc)
+    insert_session(session_id, start_time, end_time)
+
+    # Simulate detection events
+    for i in range(25):
+        detection = "A"  # For example, the detected letter is "A"
+        timestamp = datetime.now(timezone.utc)
+        confidence = 0.95
+        add_detection_to_batch(session_id, detection, timestamp, confidence)
+        time.sleep(0.1)  # Simulate delay between detections
+
+    # Allow time for periodic flush to run and then do a final flush
+    time.sleep(FLUSH_INTERVAL + 1)
+    flush_detection_batch()
+
+    # Query and log all session and detection records for verification
+    sessions_data = list(db["sessions"].find())
+    detections_data = list(db["detections"].find())
+    logging.info("All sessions: " + str(sessions_data))
+    logging.info("All detections: " + str(detections_data))
