@@ -11,6 +11,17 @@ Build a containerized app that uses machine learning. See [instructions](./instr
 ## Overview 
 This project is a containerized application that recognizes ASL hand signals using a machine learning model. 
 
+- **Machine Learning Client:**  
+  A Python program that collects sensor data (e.g., via camera) and performs analysis (e.g., image recognition and classification) with its results stored in a MongoDB database.
+
+- **Web App:**  
+  A Flask-based web application that visualizes the machine learning client’s activity and analytical results, providing a live dashboard.
+
+- **Database:**  
+  A MongoDB container that serves as the persistent data store for both the machine learning client and the web app. (Note: The MongoDB container comes directly from the official MongoDB image and is not stored in this repository.)
+
+
+
 ## Team 
 - [Aaqila Patel](https://github.com/aaqilap)
 
