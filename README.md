@@ -9,7 +9,7 @@ Build a containerized app that uses machine learning. See [instructions](./instr
 # ASL Recognition App
 
 ## Overview 
-This project is a containerized application that recognizes ASL hand signals using a machine learning model. 
+This project is a containerized application designed to recognize American Sign Language (ASL) hand signals using a machine learning model.
 
 - **Machine Learning Client:**  
   A Python program that collects sensor data (e.g., via camera) and performs analysis (e.g., image recognition and classification) with its results stored in a MongoDB database.
