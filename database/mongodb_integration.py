@@ -135,34 +135,3 @@ def graceful_exit(signum, frame):
 
 signal.signal(signal.SIGINT, graceful_exit)
 signal.signal(signal.SIGTERM, graceful_exit)
-
-# ---------------------------
-# Main Testing & Demonstration
-# ---------------------------
-if __name__ == "__main__":
-    # Start the periodic flushing thread
-    flush_thread = start_periodic_flush()
-
-    # Insert a session record for testing
-    session_id = "session_001"
-    start_time = datetime.now(timezone.utc)
-    end_time = datetime.now(timezone.utc)
-    insert_session(session_id, start_time, end_time)
-
-    # Simulate detection events
-    for i in range(25):
-        detection = "A"  # For example, the detected letter is "A"
-        timestamp = datetime.now(timezone.utc)
-        confidence = 0.95
-        add_detection_to_batch(session_id, detection, timestamp, confidence)
-        time.sleep(0.1)  # Simulate delay between detections
-
-    # Allow time for periodic flush to run and then do a final flush
-    time.sleep(FLUSH_INTERVAL + 1)
-    flush_detection_batch()
-
-    # Query and log all session and detection records for verification
-    sessions_data = list(db["sessions"].find())
-    detections_data = list(db["detections"].find())
-    logging.info("All sessions: " + str(sessions_data))
-    logging.info("All detections: " + str(detections_data))
