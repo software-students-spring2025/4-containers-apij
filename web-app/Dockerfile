@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.8-slim
 
 WORKDIR /app
 
@@ -14,4 +14,4 @@ RUN mkdir -p templates
 EXPOSE 5003
 
 # Run the application
-CMD ["python", "web_app.py"]
+CMD ["python", "web_app.py"] 

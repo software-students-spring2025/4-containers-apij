@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 flask = "*"
+opencv-python = "==4.7.0.68"
 
 [dev-packages]
 
