@@ -110,7 +110,8 @@ def generate_processed_frames():
     # Buffer to accumulate bytes
     buffer = b''
     
-    for chunk in response.iter_content(chunk_size=1024): 
+    for chunk in response.iter_content(chunk_size=1024):  
+        
         buffer += chunk
         
         # Look for frame boundaries
