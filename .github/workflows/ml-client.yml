@@ -29,7 +29,8 @@ jobs:
         run: |
           cd ml-client
           pip install pipenv
-          pipenv install --dev
+          pipenv install --dev --python $(which python)
+        
 
       - name: Run tests
         run: |
