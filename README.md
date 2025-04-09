@@ -72,7 +72,6 @@ docker compose up --build
 ```
 
 You should now see:
-- Live webcam feed in your browser at http://localhost:5001
 - Real-time sign predictions
 - Detection statistics and history
 
