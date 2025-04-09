@@ -1,6 +1,8 @@
 ![Lint-free](https://github.com/nyu-software-engineering/containerized-app-exercise/actions/workflows/lint.yml/badge.svg)
-![ML Client CI](Link will go here)
-![Web App CI](Link will go here)
+
+![ML Client CI](https://github.com/software-students-spring2025/4-containers-apij/actions/workflows/ml-client.yml/badge.svg)
+
+![Web App CI](https://github.com/software-students-spring2025/4-containers-apij/actions/workflows/web-app.yml/badge.svg)
 
 # Containerized App Exercise
 
