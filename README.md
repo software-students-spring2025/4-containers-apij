@@ -11,7 +11,7 @@ Build a containerized app that uses machine learning. See [instructions](./instr
 # ASL Recognition App
 
 ## Overview 
-This project is a containerized application that recognizes ASL hand signals using a machine learning model. 
+This project is a containerized application that recognizes ASL hand signals in real time using a machine learning model. It uses computer vision to interpret hand gestures captured via webcam, analyzes them with a trained model, and displays results through a web app. The objective is to make technology more accessible for those who rely on sign language to communicate.
 
 ## Team 
 - [Aaqila Patel](https://github.com/aaqilap)
