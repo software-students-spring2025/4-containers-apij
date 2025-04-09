@@ -4,9 +4,13 @@ on:
   push:
     paths:
       - 'ml-client/**'
+      - '.github/workflows/ml-client.yml'
+      - 'README.md'
   pull_request:
     paths:
       - 'ml-client/**'
+      - '.github/workflows/ml-client.yml'
+      - 'README.md'
 
 jobs:
   test:
