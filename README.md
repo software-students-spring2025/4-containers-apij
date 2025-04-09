@@ -16,7 +16,7 @@ This project is a containerized application that recognizes ASL hand signals usi
 
 - [Isha Gopal](https://github.com/ishy04)
 
-- [Preston Lee](https://github.comprestonglee0805)
+- [Preston Lee](https://github.com/prestonglee0805)
 
 - [Jennifer Huang](https://github.com/jennhng)
 
