@@ -29,7 +29,7 @@ cd 4-containers-apij
 
 ### 2. Navigate to the machine learning client 
 ```bash
-cd machine-learning-client
+cd ml-client
 ```
 
 ### 3. Install the dependencies 
@@ -53,19 +53,22 @@ python inference_classifier.py
 To run the web interface for viewing the ASL detection:
 
 ```bash
-# Start MongoDB and web app containers
-docker-compose up -d
-
-# The web interface will be available at:
-# http://localhost:5001
+# Navigate to the host directory (4-containers-apij). For example: 
+cd /Users/ICPC/4-containers-apij
 ```
 
-### 7. Running the ML Client with Web App
-With the web app running:
+### 7. Running the Video Feed
 
 ```bash
-# In the machine-learning-client directory
-python3 main.py
+python3 mac_webcam_server.py
+# The video feed will be available at: http://localhost:5002/video_feed
+```
+
+### 8. Running the Web App
+```bash
+# In a new terminal:
+docker compose up --build
+# The web app will be available at: http://0.0.0.0:5003
 ```
 
 You should now see:
@@ -78,7 +81,6 @@ If the video feed is not working:
 - Ensure Docker containers are running: `docker-compose ps`
 - Check container logs: `docker-compose logs web-app`
 - Make sure your webcam isn't being used by another application
-- Try restarting the ML client: `python3 main.py`
 
 
 
