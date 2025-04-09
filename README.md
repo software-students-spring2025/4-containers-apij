@@ -1,8 +1,7 @@
 ![Lint-free](https://github.com/nyu-software-engineering/containerized-app-exercise/actions/workflows/lint.yml/badge.svg)
 
 ![ML Client - CI](https://github.com/aaqilap/4-containers-apij/actions/workflows/ml-client.yml/badge.svg?branch=main)
-
-![Web App CI](https://github.com/aaqilap/4-containers-apij/actions/workflows/web-app.yml/badge.svg)
+![Web App - CI](https://github.com/aaqilap/4-containers-apij/actions/workflows/web-app.yml/badge.svg?branch=main)
 
 
 # Containerized App Exercise
