@@ -23,18 +23,14 @@ jobs:
         with:
           python-version: '3.8'
 
-      - name: Install pipenv
-        run: pip install pipenv
-
       - name: Install dependencies
         working-directory: web-app
         run: |
-          pipenv install --dev
-          pipenv install pytest-cov 
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
 
       - name: Run tests
         working-directory: web-app
-        run: pipenv run pytest tests --cov=web_app --cov-report=term-missing
-
-
-
+        run: |
+          python -m pytest tests/ --cov=web_app --cov-report=term-missing --cov-fail-under=80
