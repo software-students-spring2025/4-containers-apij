@@ -3,12 +3,12 @@ name: ML Client - CI
 on:
   push:
     paths:
-      - 'ml-client/**'
+      - 'ml_client/**'
       - '.github/workflows/ml-client.yml'
       - 'README.md'
   pull_request:
     paths:
-      - 'ml-client/**'
+      - 'ml_client/**'
       - '.github/workflows/ml-client.yml'
       - 'README.md'
 
@@ -26,13 +26,12 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
+        working-directory: ml_client
         run: |
-          cd ml-client
           pip install pipenv
           pipenv install --dev --python $(which python)
-        
 
       - name: Run tests
+        working-directory: ml_client
         run: |
-          cd ml-client
-          pipenv run pytest --cov=. --cov-report=term-missing
+          pipenv run pytest tests --cov=asl_model --cov-report=term-missing
