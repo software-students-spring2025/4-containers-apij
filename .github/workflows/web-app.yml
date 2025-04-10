@@ -16,16 +16,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.8'
+
+      - name: Install pipenv
+        run: pip install pipenv
 
       - name: Install dependencies
         run: |
           cd web-app
-          pip install pipenv
-          pipenv install --dev
+          pipenv install --dev --python 3.8
 
       - name: Run tests
         run: |
