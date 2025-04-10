@@ -44,7 +44,7 @@ pipenv --py  # should show Python 3.8 path
 We can verify that it works by running: 
 
 ```bash
-pipenv --py` #this should show a Python 3.8 path 
+pipenv --py #this should show a Python 3.8 path 
 ```
 
 ### 3. Navigate to the root project directory 
