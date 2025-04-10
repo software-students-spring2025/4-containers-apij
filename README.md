@@ -63,7 +63,7 @@ pipenv install
 
 ```bash
 pipenv shell
-```bash
+```
 
 ### 6. Run the Project with Docker Compose
 
