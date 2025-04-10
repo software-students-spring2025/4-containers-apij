@@ -206,4 +206,10 @@ if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True)
 
 
-# Trigger CI build for testing
+def is_valid_landmark(landmark):
+    """Utility function to check if a landmark is valid."""
+    return (
+        hasattr(landmark, 'x') and 
+        hasattr(landmark, 'y') and 
+        hasattr(landmark, 'visibility')
+    )

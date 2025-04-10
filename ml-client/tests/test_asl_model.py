@@ -110,3 +110,17 @@ def test_generate_processed_frames_mocked(monkeypatch):
     except StopIteration:
         pytest.fail("The generator exited too early.")
 
+
+def test_is_valid_landmark():
+    class DummyLandmark:
+        x = 0.5
+        y = 0.5
+        visibility = 1.0
+
+    dummy = DummyLandmark()
+    assert asl_model.is_valid_landmark(dummy) is True
+
+    class InvalidLandmark:
+        pass
+
+    assert asl_model.is_valid_landmark(InvalidLandmark()) is False
