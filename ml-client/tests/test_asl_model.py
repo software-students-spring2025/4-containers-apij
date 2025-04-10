@@ -32,9 +32,10 @@ def test_process_frame_no_hands(monkeypatch):
 
     monkeypatch.setattr(asl_model.hands, "process", lambda x: DummyResults())
 
-    processed = asl_model.process_frame(dummy_frame)
+    processed_frame, prediction = asl_model.process_frame(dummy_frame)
 
-    assert isinstance(processed, np.ndarray)
+    assert isinstance(processed_frame, np.ndarray)
+    assert prediction is None
 
 
 def test_process_frame_with_mocked_hand(monkeypatch):
@@ -59,9 +60,10 @@ def test_process_frame_with_mocked_hand(monkeypatch):
     monkeypatch.setattr(asl_model.hands, "process", lambda x: DummyResults())
     asl_model.model.predict = MagicMock(return_value=["A"])
 
-    processed = asl_model.process_frame(dummy_frame)
+    processed_frame, prediction = asl_model.process_frame(dummy_frame)
 
-    assert isinstance(processed, np.ndarray)
+    assert isinstance(processed_frame, np.ndarray)
+    assert prediction == "A"
 
 
 def test_get_frame_from_bytes_invalid_data():
@@ -98,7 +100,8 @@ def test_generate_processed_frames_mocked(monkeypatch):
                 yield multipart_chunk[i:i + chunk_size]
 
     monkeypatch.setattr(asl_model.requests, "get", lambda *a, **kw: DummyResponse())
-    monkeypatch.setattr(asl_model, "process_frame", lambda x: x)
+    # Mock process_frame to return just the frame without prediction
+    monkeypatch.setattr(asl_model, "process_frame", lambda x: (x, None))
 
     gen = asl_model.generate_processed_frames()
     try:
