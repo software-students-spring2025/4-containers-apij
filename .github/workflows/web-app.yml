@@ -4,9 +4,13 @@ on:
   push:
     paths:
       - 'web-app/**'
+      - '.github/workflows/web-app.yml'
+      - 'README.md'
   pull_request:
     paths:
       - 'web-app/**'
+      - '.github/workflows/web-app.yml'
+      - 'README.md'
 
 jobs:
   test:
@@ -16,19 +20,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.8
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
 
-      - name: Install pipenv
-        run: pip install pipenv
-
       - name: Install dependencies
-        run: pipenv install --dev
         working-directory: web-app
+        run: |
+          pip install pipenv
+          pipenv install --dev --python $(which python)
 
       - name: Run tests
-        run: pipenv run pytest --cov=web-app --cov-report=term-missing
         working-directory: web-app
+        run: |
+          pipenv run pytest tests --cov=. --cov-report=term-missing
+
 
