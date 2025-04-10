@@ -25,13 +25,19 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-glx
+
       - name: Install dependencies
         working-directory: ml_client
         run: |
-          pip install pipenv
-          pipenv install --dev --python $(which python)
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
 
       - name: Run tests
         working-directory: ml_client
         run: |
-          pipenv run pytest tests --cov=asl_model --cov-report=term-missing
+          python -m pytest tests/ --cov=. --cov-report=term-missing --cov-fail-under=80
