@@ -24,6 +24,43 @@ def test_get_frame_from_bytes():
     assert decoded.shape == (50, 50, 3)
 
 
+def test_get_frame_from_bytes_invalid_data():
+    invalid_bytes = b"not_a_real_image"
+    frame = asl_model.get_frame_from_bytes(invalid_bytes)
+    assert frame is None or isinstance(frame, np.ndarray)
+
+
+def test_get_frame_from_bytes_invalid_format():
+    invalid_data = b"thisisnotanimage"
+    result = asl_model.get_frame_from_bytes(invalid_data)
+    assert result is None
+
+
+def test_is_valid_landmark():
+    class DummyLandmark:
+        x = 0.5
+        y = 0.5
+        visibility = 1.0
+
+    dummy = DummyLandmark()
+    assert asl_model.is_valid_landmark(dummy) is True
+
+    class InvalidLandmark:
+        pass
+
+    assert asl_model.is_valid_landmark(InvalidLandmark()) is False
+
+
+def test_get_landmark_coords():
+    class DummyLandmark:
+        x = 0.42
+        y = 0.87
+
+    dummy = DummyLandmark()
+    coords = asl_model.get_landmark_coords(dummy)
+    assert coords == (0.42, 0.87)
+
+
 def test_process_frame_no_hands(monkeypatch):
     dummy_frame = np.zeros((100, 100, 3), dtype=np.uint8)
 
@@ -66,12 +103,6 @@ def test_process_frame_with_mocked_hand(monkeypatch):
     assert prediction == "A"
 
 
-def test_get_frame_from_bytes_invalid_data():
-    invalid_bytes = b"not_a_real_image"
-    frame = asl_model.get_frame_from_bytes(invalid_bytes)
-    assert frame is None or isinstance(frame, np.ndarray)
-
-
 def test_generate_processed_frames_connection_fail(monkeypatch):
     def mock_requests_get(*args, **kwargs):
         raise requests.exceptions.ConnectionError("mocked error")
@@ -100,7 +131,6 @@ def test_generate_processed_frames_mocked(monkeypatch):
                 yield multipart_chunk[i:i + chunk_size]
 
     monkeypatch.setattr(asl_model.requests, "get", lambda *a, **kw: DummyResponse())
-    # Mock process_frame to return just the frame without prediction
     monkeypatch.setattr(asl_model, "process_frame", lambda x: (x, None))
 
     gen = asl_model.generate_processed_frames()
@@ -111,16 +141,57 @@ def test_generate_processed_frames_mocked(monkeypatch):
         pytest.fail("The generator exited too early.")
 
 
-def test_is_valid_landmark():
-    class DummyLandmark:
-        x = 0.5
-        y = 0.5
-        visibility = 1.0
+def test_generate_processed_frames_real_jpeg(monkeypatch):
+    dummy_image = np.zeros((50, 50, 3), dtype=np.uint8)
+    _, encoded = cv2.imencode('.jpg', dummy_image)
+    jpeg_bytes = encoded.tobytes()
 
-    dummy = DummyLandmark()
-    assert asl_model.is_valid_landmark(dummy) is True
+    multipart_chunk = (
+        b"--frame\r\n"
+        b"Content-Type: image/jpeg\r\n\r\n" +
+        jpeg_bytes +
+        b"\r\n--frame\r\n"
+    )
 
-    class InvalidLandmark:
-        pass
+    class DummyResponse:
+        def iter_content(self, chunk_size=1024):
+            yield multipart_chunk
 
-    assert asl_model.is_valid_landmark(InvalidLandmark()) is False
+    monkeypatch.setattr(asl_model.requests, "get", lambda *a, **kw: DummyResponse())
+    gen = asl_model.generate_processed_frames()
+    frame = next(gen)
+    assert b"Content-Type: image/jpeg" in frame
+
+
+def test_generate_processed_frames_hits_yield(monkeypatch):
+    dummy_image = np.zeros((50, 50, 3), dtype=np.uint8)
+    _, encoded = cv2.imencode('.jpg', dummy_image)
+    jpeg_bytes = encoded.tobytes()
+
+    multipart_chunk = (
+        b"--frame\r\n"
+        b"Content-Type: image/jpeg\r\n\r\n" +
+        jpeg_bytes +
+        b"\r\n--frame\r\n"
+    )
+
+    class DummyResponse:
+        def iter_content(self, chunk_size=1024):
+            yield multipart_chunk
+
+    monkeypatch.setattr(asl_model.requests, "get", lambda *a, **kw: DummyResponse())
+    monkeypatch.setattr(asl_model, "process_frame", lambda x: (x, None))
+
+    gen = asl_model.generate_processed_frames()
+    result = next(gen)
+    assert isinstance(result, bytes)
+
+def test_run_server(monkeypatch):
+    monkeypatch.setattr(asl_model.app, "run", lambda *a, **kw: None)
+    asl_model.run_server()  # should hit print + app.run()
+
+def test_health_check():
+    with asl_model.app.test_client() as client:
+        response = client.get("/health")
+        assert response.status_code == 200
+        assert b"ASL model service is running!" in response.data
