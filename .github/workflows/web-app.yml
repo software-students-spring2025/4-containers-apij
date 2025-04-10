@@ -5,12 +5,10 @@ on:
     paths:
       - 'web-app/**'
       - '.github/workflows/web-app.yml'
-      - 'README.md'
   pull_request:
     paths:
       - 'web-app/**'
       - '.github/workflows/web-app.yml'
-      - 'README.md'
 
 jobs:
   test:
@@ -25,15 +23,18 @@ jobs:
         with:
           python-version: '3.8'
 
+      - name: Install pipenv
+        run: pip install pipenv
+
       - name: Install dependencies
         working-directory: web-app
         run: |
-          pip install pipenv
-          pipenv install --dev --python $(which python)
+          pipenv install --dev
+          pipenv install pytest-cov 
 
       - name: Run tests
         working-directory: web-app
-        run: |
-          pipenv run pytest tests --cov=. --cov-report=term-missing
+        run: pipenv run pytest tests --cov=web_app --cov-report=term-missing
+
 
 
