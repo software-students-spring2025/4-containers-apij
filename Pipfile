@@ -10,8 +10,8 @@ scikit-learn = "==1.2.0"
 pymongo = "*"
 requests = "*"
 flask = "*"
+python-dotenv = "*"
 pandas = "*"
-
 
 [dev-packages]
 pytest = "*"
