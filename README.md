@@ -38,7 +38,8 @@ Ensure that pipenv is using Python 3.8. If it is not, reinitialize it:
 ```bash
 pipenv --rm
 pipenv --python 3.8
-pipenv --py  # should show Python 3.8 path 
+pipenv --py  # should show Python 3.8 path
+```
 
 We can verify that it works by running: 
 
