@@ -36,28 +36,40 @@ Follow these steps to get your development environment up and running:
 
 Ensure that pipenv is using Python 3.8. If it is not, reinitialize it: 
 
-`pipenv --rm`              
-`pipenv --python 3.8`   
+```bash
+pipenv --rm
+pipenv --python 3.8
+```
 
 We can verify that it works by running: 
 
-`pipenv --py` #this should show a Python 3.8 path 
+```bash
+pipenv --py` # this should show a Python 3.8 path 
+```
 
 ## 3. Navigate to the root project directory 
 
-`cd path-to-project-4-containers-apij` 
+```bash
+cd path-to-project-4-containers-apij
+```
 
 ## 4. Install Dependencies from Pipfile
 
-`pipenv install` 
+```bash
+pipenv install
+```
 
 ## 5. Activate the Pipenv Shell 
 
-`pipenv shell` 
+```bash
+pipenv shell 
+```
 
 ## 6. Run the Project with Docker Compose 
 
-`docker compose up --build` 
+```bash
+docker compose up --build
+```
 
 ## 7. Access the Application: 
 
@@ -65,3 +77,11 @@ Once the Docker build is complete, open your browser and go to:
 
 http://localhost:5003
 
+
+# MongoDB Setup (Required) 
+Our system uses a MongoDB container. To run it independently: 
+```bash
+docker run --name mongodb -d -p 27017:27017 mongo
+```
+
+Ensure MongoDB is running before launching the full system with Docker. 
