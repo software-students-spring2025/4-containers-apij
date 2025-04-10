@@ -77,3 +77,22 @@ Once the Docker build is complete, open your browser and go to:
 
 http://localhost:5003
 
+## MongoDB Setup
+MongoDB is run in its own container. Run the follownig: 
+
+```bash
+docker run --name mongodb -d -p 27017:27017 mongo
+```
+
+The machine learning client will populate the database on successful recognition. 
+
+## Environment Configuration
+
+Create a '.env' file for your secrets/configurations
+Example: 
+
+```bash
+MONGO_URI=mongodb://localhost:27017
+FLASK_SECRET_KEY=your_secret_key
+```
+
