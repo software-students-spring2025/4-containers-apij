@@ -66,6 +66,7 @@ def test_stats_route_with_demo_data(client):
         assert 'frequency' in charts
         assert 'timeline' in charts
 
+
 def test_stats_route_with_mongodb(client, mock_mongodb):
     """Test the stats endpoint when using MongoDB data."""
     # Mock MongoDB data
@@ -442,3 +443,6 @@ def test_demo_data_store_max_size():
     
     # Verify that only the last 100 detections are kept
     assert len(store.demo_data) == 100 
+
+
+# Test to trigger CI badge 
