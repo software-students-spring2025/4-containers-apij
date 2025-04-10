@@ -12,12 +12,11 @@ This project is a containerized application that recognizes ASL hand signals in 
 
 ## Team 
 - [Aaqila Patel](https://github.com/aaqilap)
-
 - [Isha Gopal](https://github.com/ishy04)
-
+- - [Jennifer Huang](https://github.com/jennhng)
 - [Preston Lee](https://github.com/prestonglee0805)
 
-- [Jennifer Huang](https://github.com/jennhng)
+
 
 ## Setup Instructions
 
