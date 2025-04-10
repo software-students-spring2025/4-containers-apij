@@ -10,6 +10,9 @@ scikit-learn = "==1.2.0"
 pymongo = "*"
 requests = "*"
 flask = "*"
+pandas = "*"
+plotly = "*"
+python-dotenv = "*"
 
 [dev-packages]
 pytest = "*"
