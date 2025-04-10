@@ -2,29 +2,59 @@ version: '3'
 
 services:
   ml-client:
-    build:
-      context: ./ml-client
-    container_name: asl-model #CONTAINER NAME IS asl-model
+    build: ./ml-client
+    container_name: asl-model
     ports:
       - "5001:5001"
-    restart: unless-stopped
-
+    volumes:
+      - ./ml-client:/app
+    environment:
+      - FLASK_APP=asl_model.py
+      - FLASK_ENV=development
+    networks:
+      - app-network
 
   web-app:
-    build:
-      context: ./web-app
+    build: ./web-app
+    container_name: web-app
     ports:
       - "5003:5003"
+    volumes:
+      - ./web-app:/app
     environment:
-      - PYTHONUNBUFFERED=1
-    # Using 'extra_hosts' to add a host mapping for host.docker.internal
-    # This ensures compatibility across Docker versions 
-    extra_hosts:
-      - "host.docker.internal:host-gateway" 
-    
+      - FLASK_APP=web_app.py
+      - FLASK_ENV=development
+      - MONGODB_URI=mongodb://mongodb:27017/
     depends_on:
-      - ml-client
-    restart: unless-stopped 
+      mongodb:
+        condition: service_healthy
+      ml-client:
+        condition: service_started
+    networks:
+      - app-network
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
 
 
     
