@@ -25,67 +25,43 @@ This project is a containerized application that recognizes ASL hand signals in 
 - [Jennifer Huang](https://github.com/jennhng)
 
 ## Setup Instructions
-### 1. Clone the repository 
-```bash
-git clone https://github.com/software-students-spring2025/4-containers-apij.git
-cd 4-containers-apij
-```
 
-### 2. Navigate to the machine learning client 
-```bash
-cd ml-client
-```
+Follow these steps to get your development environment up and running:
 
-### 3. Install the dependencies 
-```bash
-pipenv install 
-```
+---
 
-### 4. Activate the virtual environment 
-```bash
-pipenv shell
-```
+## 1. install Python 3.8 (using `pyenv` if needed)
 
-### 5. Run the following scripts in order. After training, the app will open webcam and predict hand signals. Press 'Q' to quit the inference session. 
-```bash
-python create_dataset.py
-python train_classifier.py
-python inference_classifier.py
-```
+## 2. Setup pipenv with Python 3.8  
 
-### 6. Running the Web Application
-To run the web interface for viewing the ASL detection:
+Ensure that pipenv is using Python 3.8. If it is not, reinitialize it: 
 
-```bash
-# Navigate to the host directory (4-containers-apij). For example: 
-cd /Users/ICPC/4-containers-apij
-```
+`pipenv --rm`              
+`pipenv --python 3.8`   
 
-### 7. Running the Video Feed
+We can verify that it works by running: 
 
-```bash
-python3 mac_webcam_server.py
-# The video feed will be available at: http://localhost:5002/video_feed
-```
+`pipenv --py` #this should show a Python 3.8 path 
 
-### 8. Running the Web App
-```bash
-# In a new terminal:
-docker compose up --build
-# The web app will be available at: http://0.0.0.0:5003
-```
+## 3. Navigate to the root project directory 
 
-You should now see:
-- Real-time sign predictions
-- Detection statistics and history
+`cd path-to-project-4-containers-apij` 
 
-### 8. Troubleshooting
-If the video feed is not working:
-- Ensure Docker containers are running: `docker-compose ps`
-- Check container logs: `docker-compose logs web-app`
-- Make sure your webcam isn't being used by another application
+## 4. Install Dependencies from Pipfile
 
+`pipenv install` 
 
+## 5. Activate the Pipenv Shell 
 
+`pipenv shell` 
 
+## 6. Run the Project with Docker Compose 
+
+`docker compose up --build` 
+
+## 7. Access the Application: 
+
+Once the Docker build is complete, open your browser and go to: 
+
+http://localhost:5003
 
