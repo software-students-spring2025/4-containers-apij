@@ -204,3 +204,6 @@ def health():
 if __name__ == '__main__':
     print("Starting ASL Model Server on http://0.0.0.0:5001")
     app.run(host='0.0.0.0', port=5001, debug=True)
+
+
+# Trigger CI build for testing
