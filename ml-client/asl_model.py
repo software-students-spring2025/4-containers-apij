@@ -4,7 +4,8 @@ import mediapipe as mp
 import numpy as np
 import time
 import requests
-from flask import Flask, Response
+from flask import Flask, Response, request, jsonify
+import base64
 
 app = Flask(__name__)
 
@@ -18,18 +19,16 @@ mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 hands = mp_hands.Hands(static_image_mode=True, min_detection_confidence=0.3)
 
-# Set a single color for all boxes - green box_color = (0, 255, 0)  # Green in BGR
+# Set a single color for all boxes - green
 box_color = (0, 255, 0)  # Green in BGR
 
-# URL of the webcam service on the host machine 
-#matches feed of local host_webcam_server 
-#NOTE: host.docker.internal works exclusively for Windows and Mac Containers
-WEBCAM_URL = "http://host.docker.internal:5002/video_feed"
-
 def process_frame(frame):
+    """Process a single frame and return the processed frame with predictions"""
     H, W, _ = frame.shape
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     results = hands.process(frame_rgb)
+    
+    prediction_text = None
     
     if results.multi_hand_landmarks:
         # Draw all hands
@@ -66,8 +65,8 @@ def process_frame(frame):
         # Make prediction
         try:
             prediction = model.predict([np.asarray(data_aux)])
-            # The prediction is already a string letter, no need for conversion
-            predicted_character = prediction[0]
+            # The prediction is already a string letter
+            prediction_text = prediction[0]
             
             # Draw bounding box
             x1 = int(min(x_) * W) - 10
@@ -76,12 +75,46 @@ def process_frame(frame):
             y2 = int(max(y_) * H) - 10
             
             cv2.rectangle(frame, (x1, y1), (x2, y2), box_color, 4)
-            cv2.putText(frame, predicted_character, (x1, y1 - 10),
+            cv2.putText(frame, prediction_text, (x1, y1 - 10),
                      cv2.FONT_HERSHEY_SIMPLEX, 1.3, box_color, 3, cv2.LINE_AA)
         except Exception as e:
             print(f"Prediction error: {e}")
     
-    return frame
+    return frame, prediction_text
+
+@app.route('/process_single_frame', methods=['POST'])
+def process_single_frame():
+    """Process a single frame from an HTTP POST request"""
+    if 'frame' not in request.files:
+        return jsonify({'error': 'No frame provided'}), 400
+    
+    try:
+        # Get the frame from the request
+        frame_file = request.files['frame']
+        frame_bytes = frame_file.read()
+        
+        # Convert to numpy array
+        nparr = np.frombuffer(frame_bytes, np.uint8)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        if frame is None:
+            return jsonify({'error': 'Invalid frame data'}), 400
+        
+        # Process the frame
+        processed_frame, prediction = process_frame(frame)
+        
+        # Convert processed frame to base64 for response
+        _, buffer = cv2.imencode('.jpg', processed_frame)
+        processed_frame_base64 = base64.b64encode(buffer).decode('utf-8')
+        
+        return jsonify({
+            'processed_image': processed_frame_base64,
+            'prediction': prediction if prediction else None
+        })
+        
+    except Exception as e:
+        print(f"Error processing frame: {e}")
+        return jsonify({'error': str(e)}), 500
 
 def get_frame_from_bytes(frame_bytes):
     # Convert bytes to numpy array
@@ -90,8 +123,11 @@ def get_frame_from_bytes(frame_bytes):
     return cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
 def generate_processed_frames():
-
-    print(f"Connecting to webcam at {WEBCAM_URL}...") 
+    """Legacy webcam stream processing (kept for compatibility)"""
+    # URL of the webcam service on the host machine
+    WEBCAM_URL = "http://host.docker.internal:5002/video_feed"
+    
+    print(f"Connecting to webcam at {WEBCAM_URL}...")
 
     try:  
         # Using requests to get the video feed from the host
@@ -102,7 +138,6 @@ def generate_processed_frames():
         print(f"Failed to connect to webcam stream: {e}")  
         return 
     
-
     # These will be used to extract frames from the multipart response
     boundary = b'frame'
     frame_marker = b'--' + boundary
@@ -134,7 +169,7 @@ def generate_processed_frames():
                             if frame is not None: 
                                 print("FRAME DECODED SUCCESSFULLY: running prediction...")
                                 # Apply model to detect sign language
-                                processed_frame = process_frame(frame)
+                                processed_frame, _ = process_frame(frame)
                                 
                                 # Encode processed frame back to JPEG
                                 ret, buffer_img = cv2.imencode('.jpg', processed_frame)
@@ -152,14 +187,16 @@ def generate_processed_frames():
 @app.route('/processed_feed')
 def processed_feed():
     """Stream the processed webcam feed with sign language detection"""  
-
     #debugging tool
     print("Client connected to /processed_feed")
     return Response(generate_processed_frames(),
                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
-#HOSTING ON PORT 5001
+@app.route('/health')
+def health():
+    """Health check endpoint"""
+    return "ASL model service is running!"
+
 if __name__ == '__main__':
     print("Starting ASL Model Server on http://0.0.0.0:5001")
-    print(f"Connecting to webcam at {WEBCAM_URL}")
     app.run(host='0.0.0.0', port=5001, debug=True)
