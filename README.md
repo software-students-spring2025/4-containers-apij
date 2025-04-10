@@ -28,38 +28,49 @@ This project is a containerized application that recognizes ASL hand signals in 
 
 Follow these steps to get your development environment up and running:
 
----
 
-## 1. install Python 3.8 (using `pyenv` if needed)
+### 1. Install Python 3.8 (using `pyenv` if needed)
 
-## 2. Setup pipenv with Python 3.8  
+### 2. Setup pipenv with Python 3.8  
 
 Ensure that pipenv is using Python 3.8. If it is not, reinitialize it: 
 
-`pipenv --rm`              
-`pipenv --python 3.8`   
+```bash
+pipenv --rm
+pipenv --python 3.8
+pipenv --py  # should show Python 3.8 path 
 
 We can verify that it works by running: 
 
-`pipenv --py` #this should show a Python 3.8 path 
+```bash
+pipenv --py` #this should show a Python 3.8 path 
+```
 
-## 3. Navigate to the root project directory 
+### 3. Navigate to the root project directory 
 
-`cd path-to-project-4-containers-apij` 
+```bash
+cd path-to-project-4-containers-apij
+``` 
 
-## 4. Install Dependencies from Pipfile
+### 4. Install Dependencies from Pipfile
 
-`pipenv install` 
+```bash
+pipenv install
+```
 
-## 5. Activate the Pipenv Shell 
+### 5. Activate the Pipenv Shell 
 
-`pipenv shell` 
+```bash
+pipenv shell
+```bash
 
-## 6. Run the Project with Docker Compose 
+### 6. Run the Project with Docker Compose
 
-`docker compose up --build` 
+```bash
+docker compose up --build
+```
 
-## 7. Access the Application: 
+### 7. Access the Application: 
 
 Once the Docker build is complete, open your browser and go to: 
 
