@@ -11,9 +11,8 @@ pymongo = "*"
 requests = "*"
 flask = "*"
 python-dotenv = "*"
-pandas = "*"
 numpy = "*"
-
+pandas = "*"
 
 [dev-packages]
 pytest = "*"
