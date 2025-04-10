@@ -12,6 +12,8 @@ requests = "*"
 flask = "*"
 python-dotenv = "*"
 pandas = "*"
+numpy = "*"
+
 
 [dev-packages]
 pytest = "*"
