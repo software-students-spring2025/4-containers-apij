@@ -7,6 +7,7 @@ import requests
 from unittest.mock import MagicMock
 from flask import Flask, Response, request, jsonify
 import base64
+import db  # Import our database module
 
 app = Flask(__name__)
 
@@ -81,6 +82,14 @@ def process_frame(frame):
             cv2.rectangle(frame, (x1, y1), (x2, y2), box_color, 4)
             cv2.putText(frame, prediction_text, (x1, y1 - 10),
                      cv2.FONT_HERSHEY_SIMPLEX, 1.3, box_color, 3, cv2.LINE_AA)
+            
+            # Save prediction to MongoDB
+            if prediction_text:
+                # Convert frame to base64 for storage
+                _, buffer = cv2.imencode('.jpg', frame)
+                frame_base64 = base64.b64encode(buffer).decode('utf-8')
+                db.save_prediction(frame_base64, prediction_text)
+                
         except Exception as e:
             print(f"Prediction error: {e}")
     

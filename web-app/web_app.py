@@ -41,7 +41,7 @@ for attempt in range(max_retries):
         client = MongoClient(mongodb_uri, serverSelectionTimeoutMS=5000)
         # Test the connection
         client.server_info()
-        db = client.asl_detections
+        db = client.asl_db  # Use the same database name as the ML client
         mongodb_connected = True
         print("Successfully connected to MongoDB")
         break
@@ -112,7 +112,7 @@ def get_stats():
         if mongodb_connected:
             # Get detections from the last 30 minutes
             cutoff_time = datetime.now() - timedelta(minutes=30)
-            detections = list(db.detections.find({'timestamp': {'$gte': cutoff_time}}))
+            detections = list(db.predictions.find({'timestamp': {'$gte': cutoff_time}}))
             
             if not detections:
                 # If no data in MongoDB, use demo data
@@ -123,14 +123,14 @@ def get_stats():
         
         # Calculate statistics
         total_detections = len(detections)
-        unique_signs = len(set(d['sign'] for d in detections)) if detections else 0
-        avg_confidence = sum(d['confidence'] for d in detections) / total_detections if detections else 0
+        unique_signs = len(set(d['prediction'] for d in detections)) if detections else 0
+        avg_confidence = 0.95  # Default confidence since ML client doesn't provide it
         last_detection = detections[0]['timestamp'].strftime('%Y-%m-%d %H:%M:%S') if detections else "No detections yet"
         
         # Create frequency chart
         if detections:
             df = pd.DataFrame(detections)
-            sign_counts = df['sign'].value_counts().reset_index()
+            sign_counts = df['prediction'].value_counts().reset_index()
             sign_counts.columns = ['sign', 'count']
             
             freq_fig = px.bar(sign_counts, x='sign', y='count', 
@@ -203,11 +203,15 @@ def process_frame():
         processed_frame, prediction = process_with_model(frame)
         
         # Store the detection in MongoDB
-        if prediction != "Error":
+        if prediction and prediction != "Error":
             if mongodb_connected:
-                db.detections.insert_one({
-                    "sign": prediction,
-                    "confidence": 0.95,  # This should come from the model
+                # Convert frame to base64 for storage
+                _, buffer = cv2.imencode('.jpg', processed_frame)
+                frame_base64 = base64.b64encode(buffer).decode('utf-8')
+                
+                db.predictions.insert_one({
+                    "frame_data": frame_base64,
+                    "prediction": prediction,
                     "timestamp": datetime.utcnow()
                 })
             else:
