@@ -73,13 +73,10 @@ Once the Docker build is complete, open your browser and go to:
 http://localhost:5003
 
 ## MongoDB Setup
-MongoDB is run in its own container. Run the follownig: 
-
-```bash
-docker run --name mongodb -d -p 27017:27017 mongo
-```
-
-The machine learning client will populate the database on successful recognition. 
+MongoDB is automatically configured and run through Docker Compose. The database will be initialized with the following settings:
+Database Name: asl_db
+Collection: predictions
+Port: 27017
 
 ## Environment Configuration
 
