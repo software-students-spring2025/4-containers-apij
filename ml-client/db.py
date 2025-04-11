@@ -24,7 +24,7 @@ def get_db():
         print(f"Error connecting to MongoDB: {e}")
         return None
 
-def save_prediction(frame_data, prediction, timestamp=None):
+def save_prediction(frame_data, prediction, confidence, timestamp=None):
     """Save prediction data to MongoDB"""
     db = get_db()
     if db is None:
@@ -38,6 +38,7 @@ def save_prediction(frame_data, prediction, timestamp=None):
         document = {
             'frame_data': frame_data,
             'prediction': prediction,
+            'confidence': confidence,
             'timestamp': timestamp or datetime.datetime.utcnow()
         }
         

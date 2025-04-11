@@ -70,6 +70,10 @@ def process_frame(frame):
         # Make prediction
         try:
             prediction = model.predict([np.asarray(data_aux)])
+            # Get prediction probabilities
+            prediction_probs = model.predict_proba([np.asarray(data_aux)])
+            # Get confidence score (probability of the predicted class)
+            confidence = float(prediction_probs[0][np.argmax(prediction_probs[0])])
             # The prediction is already a string letter
             prediction_text = prediction[0]
             
@@ -80,7 +84,7 @@ def process_frame(frame):
             y2 = int(max(y_) * H) - 10
             
             cv2.rectangle(frame, (x1, y1), (x2, y2), box_color, 4)
-            cv2.putText(frame, prediction_text, (x1, y1 - 10),
+            cv2.putText(frame, f"{prediction_text} ({confidence:.2f})", (x1, y1 - 10),
                      cv2.FONT_HERSHEY_SIMPLEX, 1.3, box_color, 3, cv2.LINE_AA)
             
             # Save prediction to MongoDB
@@ -88,7 +92,7 @@ def process_frame(frame):
                 # Convert frame to base64 for storage
                 _, buffer = cv2.imencode('.jpg', frame)
                 frame_base64 = base64.b64encode(buffer).decode('utf-8')
-                db.save_prediction(frame_base64, prediction_text)
+                db.save_prediction(frame_base64, prediction_text, confidence)
                 
         except Exception as e:
             print(f"Prediction error: {e}")

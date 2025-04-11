@@ -124,7 +124,7 @@ def get_stats():
         # Calculate statistics
         total_detections = len(detections)
         unique_signs = len(set(d['prediction'] for d in detections)) if detections else 0
-        avg_confidence = 0.95  # Default confidence since ML client doesn't provide it
+        avg_confidence = sum(d.get('confidence', 0) for d in detections) / total_detections if detections else 0
         last_detection = detections[0]['timestamp'].strftime('%Y-%m-%d %H:%M:%S') if detections else "No detections yet"
         
         # Create frequency chart
