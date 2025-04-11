@@ -74,8 +74,9 @@ http://localhost:5003
 
 ## MongoDB Setup
 MongoDB is automatically configured and run through Docker Compose. The database will be initialized with the following settings:
-Database Name: asl_db
-Collection: predictions
+
+Database Name: asl_db<br>
+Collection: predictions<br>
 Port: 27017
 
 ## Environment Configuration
