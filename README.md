@@ -71,17 +71,34 @@ http://localhost:5003
 
 ## MongoDB Setup
 MongoDB is automatically configured and run through Docker Compose. The database will be initialized with the following settings:
-
-Database Name: asl_db<br>
-Collection: predictions<br>
-Port: 27017
+- Database Name: asl_db<br>
+- Collection: predictions<br>
+- Port: 27017
 
 ## Environment Configuration
 Create a '.env' file for your secrets/configurations
 Example: 
-
 ```bash
 MONGO_URI=mongodb://localhost:27017
 FLASK_SECRET_KEY=your_secret_key
+```
+
+## Development Workflow
+1. Create a feature branch for your changes
+2. Make your changes and commit them
+3. Create a pull request
+4. Get code review from at least one team member
+5. Merge after approval
+
+## Testing
+Both the web app and machine learning client have test suites that must pass before merging:
+```bash
+# Run web app tests
+cd web-app
+python -m pytest tests/ --cov=web_app --cov-report=term-missing --cov-fail-under=80
+
+# Run ML client tests
+cd ../machine-learning-client
+python -m pytest tests/ --cov=ml_client --cov-report=term-missing --cov-fail-under=80
 ```
 
