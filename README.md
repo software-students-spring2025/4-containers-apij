@@ -19,15 +19,19 @@ This project is a containerized application that recognizes American Sign Langua
 
 - [Jennifer Huang](https://github.com/jennhng)
 
-## Setup Instructions
+## System Architecture
+The system consists of three main components:
+1. **Machine Learning Client**: Processes webcam feed to detect ASL signs
+2. **Web Application**: Provides a user interface for real-time ASL recognition
+3. **MongoDB Database**: Stores detection results and statistics
 
+## Setup Instructions
 Follow these steps to get your development environment up and running:
 
 
 ### 1. Install Python 3.8 (using `pyenv` if needed)
 
 ### 2. Setup pipenv with Python 3.8  
-
 Ensure that pipenv is using Python 3.8. If it is not, reinitialize it: 
 
 ```bash
@@ -37,52 +41,43 @@ pipenv --py  # This will show a Python 3.8 path
 ```
 
 We can verify that it works by running: 
-
 ```bash
 pipenv --py # This will show a Python 3.8 path 
 ```
 
 ### 3. Navigate to the root project directory 
-
 ```bash
 cd path-to-project-4-containers-apij
 ``` 
 
 ### 4. Install Dependencies from Pipfile
-
 ```bash
 pipenv install
 ```
 
 ### 5. Activate the Pipenv Shell 
-
 ```bash
 pipenv shell
 ```
 
 ### 6. Run the Project with Docker Compose
-
 ```bash
 docker compose up --build
 ```
 
 ### 7. Access the Application: 
-
 Once the Docker build is complete, open your browser and go to: 
-
 http://localhost:5003
 
 ## MongoDB Setup
-MongoDB is run in its own container. Run the follownig: 
+MongoDB is run in its own container. Run the following: 
 
 ```bash
 docker run --name mongodb -d -p 27017:27017 mongo
 ```
-
 The machine learning client will populate the database on successful recognition. 
 
 ## Environment Configuration
-
 Create a '.env' file for your secrets/configurations
 Example: 
 
