@@ -11,6 +11,12 @@ services:
     environment:
       - FLASK_APP=asl_model.py
       - FLASK_ENV=development
+      - MONGO_HOST=mongodb
+      - MONGO_PORT=27017
+      - MONGO_DB=asl_db
+    depends_on:
+      mongodb:
+        condition: service_healthy
     networks:
       - app-network
 
