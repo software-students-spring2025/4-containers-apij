@@ -74,11 +74,11 @@ class DemoDataStore:
         # Generate some random demo data
         now = datetime.now()
         for i in range(30):
-            sign = np.random.choice(self.signs)
+            prediction = np.random.choice(self.signs)
             confidence = np.random.uniform(0.7, 0.99)
             timestamp = now - timedelta(minutes=i)
             self.demo_data.append({
-                'sign': sign,
+                'prediction': prediction,
                 'confidence': confidence,
                 'timestamp': timestamp
             })
@@ -87,9 +87,9 @@ class DemoDataStore:
         cutoff_time = datetime.now() - timedelta(minutes=minutes)
         return [d for d in self.demo_data if d['timestamp'] >= cutoff_time]
     
-    def add_detection(self, sign, confidence):
+    def add_detection(self, prediction, confidence):
         self.demo_data.append({
-            'sign': sign,
+            'prediction': prediction,
             'confidence': confidence,
             'timestamp': datetime.now()
         })
@@ -113,10 +113,6 @@ def get_stats():
             # Get detections from the last 30 minutes
             cutoff_time = datetime.now() - timedelta(minutes=30)
             detections = list(db.predictions.find({'timestamp': {'$gte': cutoff_time}}))
-            
-            if not detections:
-                # If no data in MongoDB, use demo data
-                detections = demo_store.get_recent_detections()
         else:
             # Use demo data if MongoDB is not connected
             detections = demo_store.get_recent_detections()

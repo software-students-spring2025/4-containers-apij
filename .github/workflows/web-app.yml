@@ -32,5 +32,10 @@ jobs:
 
       - name: Run tests
         working-directory: web-app
+        env:
+          PYTHONPATH: ${{ github.workspace }}/web-app
+          MONGODB_URI: mongodb://mongodb:27017/
+          FLASK_APP: web_app.py
+          FLASK_ENV: testing
         run: |
-          python -m pytest tests/ --cov=web_app --cov-report=term-missing --cov-fail-under=80
+          python -m pytest tests/ --cov=web_app --cov-report=term-missing --cov-fail-under=80 -v
