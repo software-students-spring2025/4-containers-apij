@@ -73,10 +73,11 @@ Once the Docker build is complete, open your browser and go to:
 http://localhost:5003
 
 ## MongoDB Setup
-MongoDB is run in its own container. Run the follownig: 
+MongoDB runs as its own container and is managed by Docker Compose. You do not need to run a separate command to start it—the MongoDB service is automatically started when you run:
 
-```bash
-docker run --name mongodb -d -p 27017:27017 mongo
+docker compose up --build
+
+Once the containers are up, the machine learning client will populate the database with recognition data.
 ```
 
 The machine learning client will populate the database on successful recognition. 
