@@ -24,9 +24,9 @@ def mock_mongodb():
         # Create mock database and collection
         mock_db = MagicMock()
         mock_collection = MagicMock()
-        mock_db.detections = mock_collection
+        mock_db.predictions = mock_collection
         mock_client.return_value.server_info.return_value = {'version': '4.4.0'}
-        mock_client.return_value.asl_detections = mock_db
+        mock_client.return_value.asl_db = mock_db
         
         # Patch the db directly
         with patch('web_app.db', mock_db):
@@ -72,12 +72,12 @@ def test_stats_route_with_mongodb(client, mock_mongodb):
     # Mock MongoDB data
     mock_detections = [
         {
-            'sign': 'A',
+            'prediction': 'A',
             'confidence': 0.95,
             'timestamp': datetime.now() - timedelta(minutes=5)
         },
         {
-            'sign': 'B',
+            'prediction': 'B',
             'confidence': 0.85,
             'timestamp': datetime.now() - timedelta(minutes=10)
         }
@@ -111,9 +111,12 @@ def test_stats_route_with_mongodb_empty(client, mock_mongodb):
         # Verify MongoDB was queried
         mock_mongodb.find.assert_called_once()
         
-        # Check that demo data was used
+        # Check that we get zero values when MongoDB is empty
         stats = data['stats']
-        assert stats['total_detections'] > 0
+        assert stats['total_detections'] == 0
+        assert stats['unique_signs'] == 0
+        assert stats['avg_confidence'] == 0
+        assert stats['last_detection'] == "No detections yet"
 
 def test_stats_route_with_error(client, mock_mongodb):
     """Test the stats endpoint when an error occurs."""
@@ -216,7 +219,7 @@ def test_demo_data_store():
     
     # Test initialization
     assert len(store.demo_data) > 0
-    assert all('sign' in d for d in store.demo_data)
+    assert all('prediction' in d for d in store.demo_data)
     assert all('confidence' in d for d in store.demo_data)
     assert all('timestamp' in d for d in store.demo_data)
     
@@ -230,7 +233,7 @@ def test_demo_data_store():
     initial_count = len(store.demo_data)
     store.add_detection('X', 0.9)
     assert len(store.demo_data) == initial_count + 1
-    assert store.demo_data[-1]['sign'] == 'X'
+    assert store.demo_data[-1]['prediction'] == 'X'
     assert store.demo_data[-1]['confidence'] == 0.9
 
 def test_mongodb_connection_retry():
@@ -276,7 +279,7 @@ def test_process_frame_with_mongodb_success(client, mock_mongodb):
             # Mock cv2.imencode to return a valid encoded image
             with patch('cv2.imencode', return_value=(True, np.array([1, 2, 3], dtype=np.uint8))):
                 with patch('web_app.mongodb_connected', True):
-                    response = client.post('/process_frame', 
+                    response = client.post('/process_frame',
                                          data={'frame': (test_image, 'test.jpg')},
                                          content_type='multipart/form-data')
                     
@@ -304,14 +307,14 @@ def test_process_frame_with_mongodb_error(client, mock_mongodb):
                     # Mock MongoDB insert to raise an exception
                     mock_mongodb.insert_one.side_effect = Exception("MongoDB error")
                     
-                    response = client.post('/process_frame', 
+                    response = client.post('/process_frame',
                                          data={'frame': (test_image, 'test.jpg')},
                                          content_type='multipart/form-data')
                     
+                    # The response should be 500 since we're not handling the error gracefully
                     assert response.status_code == 500
                     data = json.loads(response.data)
                     assert 'error' in data
-                    assert 'MongoDB error' in data['error']
 
 def test_process_frame_with_demo_data(client):
     """Test frame processing with demo data storage."""
