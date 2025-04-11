@@ -1,19 +1,14 @@
-![Lint-free](https://github.com/nyu-software-engineering/containerized-app-exercise/actions/workflows/lint.yml/badge.svg)
-
-![ML Client - CI](https://github.com/software-students-spring2025/4-containers-apij/actions/workflows/ml-client.yml/badge.svg?branch=main)
-
-
-![Web App - CI](https://github.com/software-students-spring2025/4-containers-apij/actions/workflows/web-app.yml/badge.svg)
+![Lint-free](https://github.com/nyu-software-engineering/containerized-app-exercise/actions/workflows/lint.yml/badge.svg) ![ML Client - CI](https://github.com/software-students-spring2025/4-containers-apij/actions/workflows/ml-client.yml/badge.svg?branch=main) ![Web App - CI](https://github.com/software-students-spring2025/4-containers-apij/actions/workflows/web-app.yml/badge.svg)
 
 
 # Containerized App Exercise
 
 Build a containerized app that uses machine learning. See [instructions](./instructions.md) for details.
 
-# ASL Recognition App
+# American Sign Language (ASL) Recognition App
 
 ## Overview 
-This project is a containerized application that recognizes ASL hand signals in real time using a machine learning model. It uses computer vision to interpret hand gestures captured via webcam, analyzes them with a trained model, and displays results through a web app. The objective is to make technology more accessible for those who rely on sign language to communicate.
+This project is a containerized application that recognizes American Sign Language(ASL) hand signals in real time using a machine learning model. It uses computer vision to interpret hand gestures captured via webcam, analyzes them with a trained model, and displays results through a web app. The objective is to make technology more accessible for those who rely on sign language to communicate.
 
 ## Team 
 - [Aaqila Patel](https://github.com/aaqilap)
